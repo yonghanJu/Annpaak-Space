@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포트원 결제 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .product {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .product h3 {
+            color: #555;
+            margin-top: 0;
+        }
+        .price {
+            font-size: 24px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>포트원 결제 테스트</h1>
+        
+        <div class="product">
+            <h3>테스트 상품</h3>
+            <p>이것은 결제 테스트용 상품입니다.</p>
+            <div class="price">1,000원</div>
+            <button class="btn" onclick="requestPayment()">결제하기</button>
+        </div>
+        
+        <div class="product">
+            <h3>프리미엄 상품</h3>
+            <p>더 비싼 테스트 상품입니다.</p>
+            <div class="price">5,000원</div>
+            <button class="btn" onclick="requestPayment(5000, '프리미엄 상품')">결제하기</button>
+        </div>
+        
+    </div>
+
+    <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+    <script>
+        console.log('JavaScript 로드됨');
+        
+        // 전역 함수로 정의
+        window.requestPayment = async function(amount = 1000, productName = '테스트 상품') {
+            console.log('결제 요청 시작:', amount, productName);
+            
+            if (!window.IMP) {
+                alert('포트원 SDK가 로드되지 않았습니다.');
+                return;
+            }
+            
+            try {
+                // 서버에서 가맹점 설정 정보 가져오기
+                const configResponse = await fetch('/api/config');
+                const config = await configResponse.json();
+                
+                window.IMP.init(config.merchantId);
+                console.log('IMP 초기화 완료:', config.merchantId);
+            
+            // 고유한 주문번호 생성
+            const orderId = 'order_' + new Date().getTime();
+            console.log('주문번호:', orderId);
+            
+            // 포트원 카카오페이 결제 요청
+            window.IMP.request_pay({
+                pg: "kakaopay", // 카카오페이 PG사
+                pay_method: "card", // 결제수단
+                merchant_uid: orderId, // 주문번호
+                name: productName, // 상품명
+                amount: amount, // 결제금액
+                buyer_email: "test@example.com", // 구매자 이메일
+                buyer_name: "테스트 구매자", // 구매자 이름
+                buyer_tel: "010-1234-5678", // 구매자 전화번호
+                buyer_addr: "서울시 강남구", // 구매자 주소
+                buyer_postcode: "12345", // 구매자 우편번호
+                m_redirect_url: window.location.origin + "/payment-success" // 모바일 결제 완료 후 리다이렉트 URL
+            }, function (rsp) {
+                console.log('결제 응답:', rsp);
+                
+                if (rsp.success) {
+                    // 결제 성공 시
+                    alert(`결제가 완료되었습니다!\n주문번호: ${rsp.merchant_uid}\n결제금액: ${rsp.paid_amount}원`);
+                    window.location.href = '/payment-success?orderId=' + rsp.merchant_uid + '&amount=' + rsp.paid_amount;
+                } else {
+                    // 결제 실패 시
+                    console.error('결제 실패:', rsp.error_msg);
+                    alert(`결제에 실패했습니다.\n에러 내용: ${rsp.error_msg}`);
+                    window.location.href = '/payment-failed?reason=' + encodeURIComponent(rsp.error_msg);
+                }
+            });
+            
+            } catch (error) {
+                console.error('결제 설정 오류:', error);
+                alert('결제 설정을 가져오는 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 페이지 로드 확인
+        window.addEventListener('load', function() {
+            console.log('페이지 로드 완료');
+            console.log('IMP 객체:', window.IMP);
+        });
+    </script>
+</body>
+</html>

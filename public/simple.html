@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포트원 결제 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .btn { 
+            background: #007bff; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 10px;
+            font-size: 16px;
+        }
+        .btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>포트원 결제 테스트</h1>
+    
+    <button class="btn" onclick="testJS()">JavaScript 테스트</button>
+    <button class="btn" onclick="startPayment()">이니시스 결제</button>
+    <button class="btn" onclick="startKakaoPayment()">카카오페이 결제</button>
+    
+    <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+    <script>
+        console.log("페이지 로드됨");
+        
+        function testJS() {
+            console.log("테스트 함수 호출됨");
+            alert("JavaScript가 정상 작동합니다!");
+        }
+        
+        function startPayment() {
+            console.log("결제 함수 호출됨");
+            
+            if (typeof IMP === 'undefined') {
+                alert("포트원 SDK 로드 실패");
+                return;
+            }
+            
+            // 사용자 테스트 가맹점 코드 사용
+            IMP.init('imp75237421');
+            
+            IMP.request_pay({
+                pg: 'html5_inicis',
+                pay_method: 'card',
+                merchant_uid: 'order_' + new Date().getTime(),
+                name: '테스트 상품',
+                amount: 100, // 최소 결제 금액으로 변경
+                buyer_email: 'test@test.com',
+                buyer_name: '테스트',
+                buyer_tel: '010-1234-5678'
+            }, function(rsp) {
+                console.log("결제 응답:", rsp);
+                if (rsp.success) {
+                    alert('결제 성공: ' + rsp.paid_amount + '원');
+                    window.location.href = '/payment-success?orderId=' + rsp.merchant_uid + '&amount=' + rsp.paid_amount;
+                } else {
+                    alert('결제 실패: ' + rsp.error_msg);
+                }
+            });
+        }
+        
+        function startKakaoPayment() {
+            console.log("카카오페이 결제 함수 호출됨");
+            
+            if (typeof IMP === 'undefined') {
+                alert("포트원 SDK 로드 실패");
+                return;
+            }
+            
+            IMP.init('imp75237421');
+            
+            IMP.request_pay({
+                pg: 'kakaopay',
+                pay_method: 'card',
+                merchant_uid: 'order_' + new Date().getTime(),
+                name: '카카오페이 테스트',
+                amount: 100,
+                buyer_email: 'test@test.com',
+                buyer_name: '테스트',
+                buyer_tel: '010-1234-5678'
+            }, function(rsp) {
+                console.log("카카오페이 결제 응답:", rsp);
+                if (rsp.success) {
+                    alert('결제 성공: ' + rsp.paid_amount + '원');
+                    window.location.href = '/payment-success?orderId=' + rsp.merchant_uid + '&amount=' + rsp.paid_amount;
+                } else {
+                    alert('결제 실패: ' + rsp.error_msg);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
